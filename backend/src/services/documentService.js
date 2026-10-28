@@ -1,5 +1,6 @@
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const config = require('../config');
 const documentRepository = require('../repositories/documentRepository');
 const fileRepository = require('../repositories/fileRepository');
 const ServiceError = require('./serviceError');
@@ -34,6 +35,23 @@ async function createDocument(owner, file) {
     mimeType: file.mimetype || 'application/octet-stream',
   };
 
+  let totalStorageBytes;
+  try {
+    totalStorageBytes = await fileRepository.getTotalBytes();
+  } catch (error) {
+    await fileRepository.remove(file.filename);
+    throw error;
+  }
+
+  if (totalStorageBytes > config.maxStorageBytes) {
+    await fileRepository.remove(file.filename);
+    throw new ServiceError(
+      507,
+      'STORAGE_LIMIT_REACHED',
+      'O limite de armazenamento local foi atingido.',
+    );
+  }
+
   try {
     documentRepository.create(document);
   } catch (error) {
@@ -63,7 +81,7 @@ async function getDocumentForDownload(id, owner) {
 
   return {
     document: publicDocument(document),
-    filePath: fileRepository.getPath(document.storageName),
+    fileStream: fileRepository.createReadStream(document.storageName),
   };
 }
 

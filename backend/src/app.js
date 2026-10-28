@@ -14,7 +14,10 @@ const express = require('express');
 const multer = require('multer');
 const config = require('./config');
 const documentRoutes = require('./routes/documentRoutes');
+const fileRepository = require('./repositories/fileRepository');
 const ServiceError = require('./services/serviceError');
+
+fileRepository.ensureStorageDirectory();
 
 const app = express();
 

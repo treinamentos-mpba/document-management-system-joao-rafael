@@ -2,17 +2,19 @@ const { randomUUID } = require('node:crypto');
 const express = require('express');
 const multer = require('multer');
 const config = require('../config');
-const fileRepository = require('../repositories/fileRepository');
 const documentController = require('../controllers/documentController');
-
-fileRepository.ensureStorageDirectory();
 
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, callback) => callback(null, config.storageDir),
     filename: (_req, _file, callback) => callback(null, randomUUID()),
   }),
-  limits: { fileSize: config.maxFileSizeBytes, files: 1 },
+  limits: {
+    fileSize: config.maxFileSizeBytes,
+    files: 1,
+    fields: 0,
+    parts: 2,
+  },
 });
 
 const router = express.Router();

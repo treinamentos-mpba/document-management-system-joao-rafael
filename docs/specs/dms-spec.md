@@ -43,7 +43,7 @@ Oferecer a usuários identificados uma aplicação web simples para enviar, list
 | --- | --- | --- |
 | RNF-01 | Os arquivos são gravados exclusivamente no filesystem local por Multer com `diskStorage`. | O diretório padrão é `backend/storage`; não usar serviços ou provedores externos. |
 | RNF-02 | Os metadados são mantidos em memória nesta fase. | Reiniciar o processo remove os metadados; arquivos já gravados podem permanecer órfãos e não são considerados documentos listáveis. |
-| RNF-03 | Configurações operacionais são obtidas por variáveis de ambiente. | No mínimo: `PORT`, `STORAGE_DIR` (padrão `backend/storage`) e `MAX_FILE_SIZE_BYTES` (padrão de 10 MiB). Valores inválidos devem impedir inicialização ou ser tratados com erro explícito, sem fallback silencioso inesperado. |
+| RNF-03 | Configurações operacionais são obtidas por variáveis de ambiente. | No mínimo: `PORT`, `STORAGE_DIR` (padrão `backend/storage`), `MAX_FILE_SIZE_BYTES` (padrão de 10 MiB) e `MAX_STORAGE_BYTES` (padrão de 1 GiB). Valores inválidos devem impedir inicialização ou ser tratados com erro explícito, sem fallback silencioso inesperado. |
 | RNF-04 | O backend segue Clean Architecture simples. | Dependências fluem de `routes` para `controllers`, `services` e `repositories`; regras de negócio não dependem de Express ou Multer. |
 | RNF-05 | O download trata o arquivo como anexo e reduz interpretação ativa pelo navegador. | Usar `Content-Disposition: attachment`, tipo de conteúdo conhecido ou `application/octet-stream` e `X-Content-Type-Options: nosniff`. |
 | RNF-06 | Erros da API têm formato previsível e não revelam caminhos locais nem detalhes internos. | Mensagens públicas são seguras; detalhes técnicos ficam nos logs do servidor. |
@@ -52,6 +52,7 @@ Oferecer a usuários identificados uma aplicação web simples para enviar, list
 ### Premissas e limites
 
 - Para o MVP, o identificador do usuário é recebido no cabeçalho `X-User-Id`, obrigatório e não vazio. Esse valor é uma convenção de desenvolvimento, não uma autenticação: a API não deve ser exposta a usuários não confiáveis sem uma camada de autenticação e autorização real.
+- O backend deve recusar inicialização com `NODE_ENV=production` enquanto a autenticação real não estiver implementada. O identificador gerado no navegador é apenas conveniência de desenvolvimento.
 - Nenhuma allowlist de extensões ou tipos MIME foi definida pelo produto. O MVP não deve inventar uma restrição incompatível; deve impor o limite de tamanho, guardar o nome original apenas como metadado e servir downloads como anexo. Uma política de tipos permitidos é uma decisão futura explícita.
 - O limite padrão de 10 MiB é uma decisão inicial configurável; a configuração deve ser validada como inteiro positivo.
 - A aplicação atende ao armazenamento local de uma única instância. Não há garantia de consistência entre múltiplos processos ou instâncias.

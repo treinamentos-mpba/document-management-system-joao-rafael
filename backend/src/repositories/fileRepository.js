@@ -19,13 +19,33 @@ function getPath(storageName) {
 
 async function exists(storageName) {
   try {
-    return (await fs.promises.stat(getPath(storageName))).isFile();
+    return (await fs.promises.lstat(getPath(storageName))).isFile();
   } catch (error) {
     if (error.code === 'ENOENT') {
       return false;
     }
     throw error;
   }
+}
+
+async function getTotalBytes() {
+  const entries = await fs.promises.readdir(config.storageDir, { withFileTypes: true });
+  const files = entries.filter((entry) => entry.isFile());
+  const sizes = await Promise.all(
+    files.map(async (file) => {
+      const stats = await fs.promises.lstat(path.join(config.storageDir, file.name));
+      return stats.size;
+    }),
+  );
+
+  return sizes.reduce((total, size) => total + size, 0);
+}
+
+function createReadStream(storageName) {
+  const noFollow = fs.constants.O_NOFOLLOW || 0;
+  return fs.createReadStream(getPath(storageName), {
+    flags: fs.constants.O_RDONLY | noFollow,
+  });
 }
 
 async function remove(storageName) {
@@ -38,4 +58,11 @@ async function remove(storageName) {
   }
 }
 
-module.exports = { ensureStorageDirectory, exists, getPath, remove };
+module.exports = {
+  createReadStream,
+  ensureStorageDirectory,
+  exists,
+  getPath,
+  getTotalBytes,
+  remove,
+};

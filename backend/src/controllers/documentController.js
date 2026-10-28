@@ -1,3 +1,4 @@
+const { pipeline } = require('node:stream/promises');
 const documentService = require('../services/documentService');
 const ServiceError = require('../services/serviceError');
 
@@ -22,31 +23,20 @@ function listDocuments(req, res) {
   res.json({ documents: documentService.listDocuments(req.owner) });
 }
 
-async function downloadDocument(req, res, next) {
+async function downloadDocument(req, res) {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.params.id)) {
     throw new ServiceError(400, 'INVALID_DOCUMENT_ID', 'Identificador de documento inválido.');
   }
 
-  const { document, filePath } = await documentService.getDocumentForDownload(
+  const { document, fileStream } = await documentService.getDocumentForDownload(
     req.params.id,
     req.owner,
   );
 
-  res.download(
-    filePath,
-    document.originalName,
-    {
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'X-Content-Type-Options': 'nosniff',
-      },
-    },
-    (error) => {
-      if (error) {
-        next(error);
-      }
-    },
-  );
+  res.attachment(document.originalName);
+  res.type('application/octet-stream');
+  res.set('X-Content-Type-Options', 'nosniff');
+  await pipeline(fileStream, res);
 }
 
 module.exports = { downloadDocument, listDocuments, requireOwner, uploadDocument };

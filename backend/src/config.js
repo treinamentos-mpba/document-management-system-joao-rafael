@@ -18,6 +18,12 @@ if (port > 65535) {
   throw new Error('PORT deve ser menor ou igual a 65535.');
 }
 
+if (process.env.NODE_ENV === 'production') {
+  throw new Error(
+    'O DMS ainda não possui autenticação; não pode ser iniciado em produção.',
+  );
+}
+
 module.exports = Object.freeze({
   port,
   storageDir: path.resolve(
@@ -27,5 +33,10 @@ module.exports = Object.freeze({
     process.env.MAX_FILE_SIZE_BYTES,
     10 * 1024 * 1024,
     'MAX_FILE_SIZE_BYTES',
+  ),
+  maxStorageBytes: positiveInteger(
+    process.env.MAX_STORAGE_BYTES,
+    1024 * 1024 * 1024,
+    'MAX_STORAGE_BYTES',
   ),
 });

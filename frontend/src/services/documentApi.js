@@ -1,19 +1,41 @@
 const API_PREFIX = '/api';
 const USER_ID_STORAGE_KEY = 'dms.user-id';
+let inMemoryUserId;
+
+function readStoredUserId(storageName) {
+  try {
+    return window[storageName].getItem(USER_ID_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export function getOrCreateUserId() {
-  try {
-    const savedUserId = window.localStorage.getItem(USER_ID_STORAGE_KEY);
+  if (inMemoryUserId) {
+    return inMemoryUserId;
+  }
+
+  for (const storageName of ['localStorage', 'sessionStorage']) {
+    const savedUserId = readStoredUserId(storageName);
     if (savedUserId) {
+      inMemoryUserId = savedUserId;
       return savedUserId;
     }
-
-    const userId = window.crypto.randomUUID();
-    window.localStorage.setItem(USER_ID_STORAGE_KEY, userId);
-    return userId;
-  } catch {
-    return window.crypto.randomUUID();
   }
+
+  const userId = window.crypto.randomUUID();
+  for (const storageName of ['localStorage', 'sessionStorage']) {
+    try {
+      window[storageName].setItem(USER_ID_STORAGE_KEY, userId);
+      inMemoryUserId = userId;
+      return userId;
+    } catch {
+      // Tenta o próximo mecanismo de persistência disponível.
+    }
+  }
+
+  inMemoryUserId = userId;
+  return inMemoryUserId;
 }
 
 async function request(path, userId, options = {}) {
